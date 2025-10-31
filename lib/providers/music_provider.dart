@@ -52,32 +52,32 @@ class MusicProvider extends ChangeNotifier {
     _allSongs = [
       Song(
         id: '1',
-        title: 'Believer',
-        artist: 'Imagine Dragons',
-        album: 'Evolve',
+        title: 'Hãy Trao Cho Anh',
+        artist: 'Sơn Tùng M-TP',
+        album: 'M-TP',
         imagePath:
-            'https://via.placeholder.com/300x300/FF5722/FFFFFF?text=Believer',
-        audioPath: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
-        duration: Duration(minutes: 3, seconds: 24),
+            'assets/images/hay_trao_cho_anh.jpg',
+        audioPath: 'assets/audio/hay_trao_cho_anh.mp3',
+        duration: Duration(minutes: 4, seconds: 24),
       ),
       Song(
         id: '2',
-        title: 'Moment Apart',
-        artist: 'ODESZA',
-        album: 'A Moment Apart',
+        title: 'Nơi Này Có Anh',
+        artist: 'Sơn Tùng M-TP',
+        album: 'M-TP',
         imagePath:
-            'https://via.placeholder.com/300x300/2196F3/FFFFFF?text=Moment+Apart',
-        audioPath: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
+            'assets/images/noi_nay_co_anh.jpg',
+        audioPath: 'assets/audio/noi_nay_co_anh.mp3',
         duration: Duration(minutes: 4, seconds: 15),
       ),
       Song(
         id: '3',
-        title: 'Shortcake',
-        artist: 'Artist Name',
-        album: 'Album Name',
+        title: 'Chạy Ngay ĐI',
+        artist: 'Sơn Tùng M-TP',
+        album: 'M-TP',
         imagePath:
-            'https://via.placeholder.com/300x300/4CAF50/FFFFFF?text=Shortcake',
-        audioPath: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
+            'assets/images/chay_ngay_di.jpg',
+        audioPath: 'assets/audio/chay_ngay_di.mp3',
         duration: Duration(minutes: 3, seconds: 45),
       ),
     ];
@@ -92,7 +92,11 @@ class MusicProvider extends ChangeNotifier {
       if (song.audioPath.startsWith('http')) {
         await _audioPlayer.play(UrlSource(song.audioPath));
       } else {
-        await _audioPlayer.play(AssetSource(song.audioPath));
+        // AssetSource expects the asset key relative to the asset bundle root
+        final String assetKey = song.audioPath.startsWith('assets/')
+            ? song.audioPath.substring('assets/'.length)
+            : song.audioPath;
+        await _audioPlayer.play(AssetSource(assetKey));
       }
     } catch (e) {
       if (kDebugMode) {

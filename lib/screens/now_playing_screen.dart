@@ -18,7 +18,7 @@ class NowPlayingScreen extends StatelessWidget {
     }
 
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -39,10 +39,12 @@ class NowPlayingScreen extends StatelessWidget {
               width: double.infinity,
               height: 320,
               decoration: BoxDecoration(
-                color: Colors.grey[300],
+                color: Theme.of(context).cardColor,
                 borderRadius: BorderRadius.circular(16),
                 image: DecorationImage(
-                  image: NetworkImage(currentSong.imagePath),
+                  image: currentSong.imagePath.startsWith('http')
+                      ? NetworkImage(currentSong.imagePath)
+                      : AssetImage(currentSong.imagePath) as ImageProvider,
                   fit: BoxFit.cover,
                 ),
                 boxShadow: [
@@ -65,9 +67,10 @@ class NowPlayingScreen extends StatelessWidget {
                     children: [
                       Text(
                         currentSong.title,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.onBackground,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -75,7 +78,10 @@ class NowPlayingScreen extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         currentSong.artist,
-                        style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -104,8 +110,15 @@ class NowPlayingScreen extends StatelessWidget {
                     ),
                   ),
                   child: Slider(
-                    value: musicProvider.currentPosition.inSeconds.toDouble(),
-                    max: musicProvider.totalDuration.inSeconds.toDouble(),
+                    value: musicProvider.totalDuration.inSeconds == 0
+                        ? 0
+                        : musicProvider.currentPosition.inSeconds
+                            .clamp(0, musicProvider.totalDuration.inSeconds)
+                            .toDouble(),
+                    max: (musicProvider.totalDuration.inSeconds == 0
+                            ? 1
+                            : musicProvider.totalDuration.inSeconds)
+                        .toDouble(),
                     onChanged: (value) {
                       musicProvider.seekTo(Duration(seconds: value.toInt()));
                     },
