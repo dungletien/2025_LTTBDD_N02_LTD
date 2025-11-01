@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'providers/music_provider.dart';
 import 'providers/theme_provider.dart';
+import 'providers/language_provider.dart';
 import 'screens/home_screen.dart';
 
 void main() {
@@ -68,14 +70,25 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (context) => MusicProvider()),
         ChangeNotifierProvider(create: (context) => ThemeProvider()),
+        ChangeNotifierProvider(create: (context) => LanguageProvider()),
       ],
-      child: Consumer<ThemeProvider>(
-        builder: (context, themeProvider, _) => MaterialApp(
+      child: Consumer2<ThemeProvider, LanguageProvider>(
+        builder: (context, themeProvider, languageProvider, _) => MaterialApp(
           title: 'Music Player',
           debugShowCheckedModeBanner: false,
           theme: lightTheme,
           darkTheme: darkTheme,
           themeMode: themeProvider.themeMode,
+          locale: languageProvider.locale,
+          supportedLocales: const [
+            Locale('en', 'US'),
+            Locale('vi', 'VN'),
+          ],
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
           home: const HomeScreen(),
         ),
       ),

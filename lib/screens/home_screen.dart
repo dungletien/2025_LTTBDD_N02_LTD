@@ -3,8 +3,8 @@ import 'package:provider/provider.dart';
 import '../providers/music_provider.dart';
 import '../models/song.dart';
 import 'now_playing_screen.dart';
-import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
+import '../providers/language_provider.dart' show LanguageProvider, AppLanguage;
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -15,6 +15,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
+  final TextEditingController _searchController = TextEditingController();
+  bool _isSearching = false;
 
   @override
   Widget build(BuildContext context) {
@@ -22,20 +24,55 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       drawer: _buildDrawer(context),
       appBar: AppBar(
-        title: Text(_getTitle()),
-        actions: [
-          IconButton(
-            icon: Icon(
-              context.read<ThemeProvider>().isDarkMode
-                  ? Icons.light_mode
-                  : Icons.dark_mode,
-            ),
-            onPressed: () => context.read<ThemeProvider>().toggle(),
-            tooltip: 'Toggle theme',
-          ),
-          IconButton(icon: const Icon(Icons.search), onPressed: () {}),
-          IconButton(icon: const Icon(Icons.more_vert), onPressed: () {}),
-        ],
+        title: _isSearching
+            ? TextField(
+                controller: _searchController,
+                autofocus: true,
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                decoration: InputDecoration(
+                  hintText: Provider.of<LanguageProvider>(context, listen: false).translate('search_songs'),
+                  hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
+                  border: InputBorder.none,
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.clear),
+                    onPressed: () {
+                      _searchController.clear();
+                      Provider.of<MusicProvider>(context, listen: false).clearSearch();
+                      setState(() {
+                        _isSearching = false;
+                      });
+                    },
+                  ),
+                ),
+                onChanged: (value) {
+                  Provider.of<MusicProvider>(context, listen: false).searchSongs(value);
+                },
+              )
+            : Text(_getTitle()),
+        actions: _isSearching
+            ? []
+            : [
+                IconButton(
+                  icon: const Icon(Icons.search),
+                  onPressed: () {
+                    setState(() {
+                      _isSearching = true;
+                    });
+                  },
+                ),
+              ],
+        leading: _isSearching
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () {
+                  _searchController.clear();
+                  Provider.of<MusicProvider>(context, listen: false).clearSearch();
+                  setState(() {
+                    _isSearching = false;
+                  });
+                },
+              )
+            : null,
       ),
       body: _buildBody(),
       bottomNavigationBar: Column(
@@ -45,21 +82,52 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   String _getTitle() {
+    final lang = Provider.of<LanguageProvider>(context, listen: false);
     switch (_selectedIndex) {
       case 0:
-        return 'Home';
+        return lang.translate('home');
       case 1:
-        return 'Playlist';
+        return lang.translate('playlist');
       case 2:
-        return 'Playing Now';
+        return lang.translate('playing_now');
       default:
-        return 'Home';
+        return lang.translate('home');
     }
   }
 
   Widget _buildBody() {
     final musicProvider = Provider.of<MusicProvider>(context);
+    final lang = Provider.of<LanguageProvider>(context);
+
+    if (_isSearching || musicProvider.searchQuery.isNotEmpty) {
+      final songs = musicProvider.filteredSongs;
+      if (songs.isEmpty && musicProvider.searchQuery.isNotEmpty) {
+        return Center(
+          child: Text(
+            lang.translate('no_results'),
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onBackground.withValues(alpha: 0.7),
+              fontSize: 16,
+            ),
+          ),
+        );
+      }
+      return ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: songs.length,
+        itemBuilder: (context, index) {
+          final song = songs[index];
+          return _buildListTile(song, musicProvider);
+        },
+      );
+    }
 
     if (_selectedIndex == 0) {
       return SingleChildScrollView(
@@ -68,7 +136,7 @@ class _HomeScreenState extends State<HomeScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Recommended for you',
+              Provider.of<LanguageProvider>(context, listen: false).translate('recommended_for_you'),
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -89,7 +157,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 24),
             Text(
-              'My Playlist',
+              Provider.of<LanguageProvider>(context, listen: false).translate('my_playlist'),
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -125,7 +193,14 @@ class _HomeScreenState extends State<HomeScreen> {
         },
       );
     } else {
-      return const Center(child: Text('Playing Now'));
+      return Center(
+        child: Text(
+          Provider.of<LanguageProvider>(context, listen: false).translate('playing_now'),
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onBackground,
+          ),
+        ),
+      );
     }
   }
 
@@ -303,7 +378,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     currentSong.artist,
                     style: TextStyle(
                       fontSize: 12,
-                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.7),
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -332,6 +409,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildBottomNav() {
+    final lang = Provider.of<LanguageProvider>(context);
     return BottomNavigationBar(
       currentIndex: _selectedIndex,
       onTap: (index) {
@@ -339,15 +417,18 @@ class _HomeScreenState extends State<HomeScreen> {
           _selectedIndex = index;
         });
       },
-      items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+      items: [
         BottomNavigationBarItem(
-          icon: Icon(Icons.playlist_play),
-          label: 'Playlist',
+          icon: const Icon(Icons.home),
+          label: lang.translate('home'),
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.music_note),
-          label: 'Playing Now',
+          icon: const Icon(Icons.playlist_play),
+          label: lang.translate('playlist'),
+        ),
+        BottomNavigationBarItem(
+          icon: const Icon(Icons.music_note),
+          label: lang.translate('playing_now'),
         ),
       ],
     );
@@ -382,26 +463,73 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            _drawerItem(context, Icons.person_outline, 'Profile'),
-            _drawerItem(context, Icons.favorite_border, 'Liked Songs'),
-            _drawerItem(context, Icons.language, 'Language'),
-            _drawerItem(context, Icons.chat_bubble_outline, 'Contact us'),
-            _drawerItem(context, Icons.help_outline, 'FAQs'),
-            _drawerItem(context, Icons.settings_outlined, 'Settings'),
+            _drawerItem(context, Icons.person_outline, 'profile', onTap: () {}),
+            _drawerItem(context, Icons.favorite_border, 'liked_songs', onTap: () {}),
+            _drawerItem(context, Icons.language, 'language', onTap: () => _showLanguageDialog(context)),
+            _drawerItem(context, Icons.chat_bubble_outline, 'contact_us', onTap: () {}),
+            _drawerItem(context, Icons.help_outline, 'faqs', onTap: () {}),
+            _drawerItem(context, Icons.settings_outlined, 'settings', onTap: () {}),
           ],
         ),
       ),
     );
   }
 
-  Widget _drawerItem(BuildContext context, IconData icon, String text) {
+  Widget _drawerItem(BuildContext context, IconData icon, String key, {required VoidCallback onTap}) {
+    final lang = Provider.of<LanguageProvider>(context, listen: false);
     return ListTile(
       leading: Icon(icon, color: Theme.of(context).colorScheme.onSurface),
       title: Text(
-        text,
+        lang.translate(key),
         style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
       ),
-      onTap: () {},
+      onTap: () {
+        Navigator.of(context).pop();
+        onTap();
+      },
+    );
+  }
+
+  void _showLanguageDialog(BuildContext context) {
+    final lang = Provider.of<LanguageProvider>(context, listen: false);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(lang.translate('select_language')),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            RadioListTile<AppLanguage>(
+              title: Text(lang.translate('vietnamese')),
+              value: AppLanguage.vietnamese,
+              groupValue: lang.currentLanguage,
+              onChanged: (value) {
+                if (value != null) {
+                  lang.setLanguage(value);
+                  Navigator.of(context).pop();
+                }
+              },
+            ),
+            RadioListTile<AppLanguage>(
+              title: Text(lang.translate('english')),
+              value: AppLanguage.english,
+              groupValue: lang.currentLanguage,
+              onChanged: (value) {
+                if (value != null) {
+                  lang.setLanguage(value);
+                  Navigator.of(context).pop();
+                }
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(lang.translate('cancel')),
+          ),
+        ],
+      ),
     );
   }
 }

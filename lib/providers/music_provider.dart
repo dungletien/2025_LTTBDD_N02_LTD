@@ -7,6 +7,8 @@ class MusicProvider extends ChangeNotifier {
 
   List<Song> _playlist = [];
   List<Song> _allSongs = [];
+  List<Song> _filteredSongs = [];
+  String _searchQuery = '';
   Song? _currentSong;
   int _currentIndex = 0;
 
@@ -17,6 +19,8 @@ class MusicProvider extends ChangeNotifier {
   // Getters
   List<Song> get playlist => _playlist;
   List<Song> get allSongs => _allSongs;
+  List<Song> get filteredSongs => _searchQuery.isEmpty ? _allSongs : _filteredSongs;
+  String get searchQuery => _searchQuery;
   Song? get currentSong => _currentSong;
   bool get isPlaying => _isPlaying;
   Duration get currentPosition => _currentPosition;
@@ -142,6 +146,27 @@ class MusicProvider extends ChangeNotifier {
 
   void removeFromPlaylist(Song song) {
     _playlist.remove(song);
+    notifyListeners();
+  }
+
+  void searchSongs(String query) {
+    _searchQuery = query.toLowerCase().trim();
+    if (_searchQuery.isEmpty) {
+      _filteredSongs = [];
+    } else {
+      _filteredSongs = _allSongs
+          .where((song) =>
+              song.title.toLowerCase().contains(_searchQuery) ||
+              song.artist.toLowerCase().contains(_searchQuery) ||
+              song.album.toLowerCase().contains(_searchQuery))
+          .toList();
+    }
+    notifyListeners();
+  }
+
+  void clearSearch() {
+    _searchQuery = '';
+    _filteredSongs = [];
     notifyListeners();
   }
 
