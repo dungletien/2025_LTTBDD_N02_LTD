@@ -5,6 +5,7 @@ import '../models/song.dart';
 import 'now_playing_screen.dart';
 import '../providers/theme_provider.dart';
 import '../providers/language_provider.dart' show LanguageProvider, AppLanguage;
+import 'liked_songs_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -205,6 +206,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildSongCard(Song song, MusicProvider provider) {
+    final isLiked = provider.isLiked(song.id);
     return GestureDetector(
       onTap: () => provider.playSong(song),
       child: Container(
@@ -213,18 +215,41 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              height: 140,
-              decoration: BoxDecoration(
-                color: Theme.of(context).cardColor,
-                borderRadius: BorderRadius.circular(8),
-                image: DecorationImage(
-                  image: song.imagePath.startsWith('http')
-                      ? NetworkImage(song.imagePath)
-                      : AssetImage(song.imagePath) as ImageProvider,
-                  fit: BoxFit.cover,
+            Stack(
+              children: [
+                Container(
+                  height: 140,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).cardColor,
+                    borderRadius: BorderRadius.circular(8),
+                    image: DecorationImage(
+                      image: song.imagePath.startsWith('http')
+                          ? NetworkImage(song.imagePath)
+                          : AssetImage(song.imagePath) as ImageProvider,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
                 ),
-              ),
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: GestureDetector(
+                    onTap: () => provider.toggleLike(song),
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.5),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        isLiked ? Icons.favorite : Icons.favorite_border,
+                        color: isLiked ? Colors.red : Colors.white,
+                        size: 18,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 8),
             Text(
@@ -291,6 +316,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildListTile(Song song, MusicProvider provider) {
     final isCurrentSong = provider.currentSong?.id == song.id;
+    final isLiked = provider.isLiked(song.id);
 
     return ListTile(
       leading: Container(
@@ -322,7 +348,22 @@ class _HomeScreenState extends State<HomeScreen> {
           color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
         ),
       ),
-      trailing: IconButton(icon: const Icon(Icons.more_vert), onPressed: () {}),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            icon: Icon(
+              isLiked ? Icons.favorite : Icons.favorite_border,
+              color: isLiked ? Colors.red : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+            ),
+            onPressed: () => provider.toggleLike(song),
+          ),
+          IconButton(
+            icon: const Icon(Icons.more_vert),
+            onPressed: () {},
+          ),
+        ],
+      ),
       onTap: () => provider.playSong(song),
     );
   }
@@ -464,7 +505,17 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 8),
             _drawerItem(context, Icons.person_outline, 'profile', onTap: () {}),
-            _drawerItem(context, Icons.favorite_border, 'liked_songs', onTap: () {}),
+            _drawerItem(
+              context,
+              Icons.favorite_border,
+              'liked_songs',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LikedSongsScreen()),
+                );
+              },
+            ),
             _drawerItem(context, Icons.language, 'language', onTap: () => _showLanguageDialog(context)),
             _drawerItem(context, Icons.chat_bubble_outline, 'contact_us', onTap: () {}),
             _drawerItem(context, Icons.help_outline, 'faqs', onTap: () {}),

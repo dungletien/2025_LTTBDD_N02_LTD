@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 import '../models/song.dart';
 
 class MusicProvider extends ChangeNotifier {
@@ -11,6 +13,7 @@ class MusicProvider extends ChangeNotifier {
   String _searchQuery = '';
   Song? _currentSong;
   int _currentIndex = 0;
+  Set<String> _likedSongIds = {};
 
   bool _isPlaying = false;
   Duration _currentPosition = Duration.zero;
@@ -20,15 +23,47 @@ class MusicProvider extends ChangeNotifier {
   List<Song> get playlist => _playlist;
   List<Song> get allSongs => _allSongs;
   List<Song> get filteredSongs => _searchQuery.isEmpty ? _allSongs : _filteredSongs;
+  List<Song> get likedSongs => _allSongs.where((song) => _likedSongIds.contains(song.id)).toList();
   String get searchQuery => _searchQuery;
   Song? get currentSong => _currentSong;
   bool get isPlaying => _isPlaying;
   Duration get currentPosition => _currentPosition;
   Duration get totalDuration => _totalDuration;
 
+  bool isLiked(String songId) => _likedSongIds.contains(songId);
+
   MusicProvider() {
     _initAudioPlayer();
     _loadSampleSongs();
+    _loadLikedSongs();
+  }
+
+  Future<void> _loadLikedSongs() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final likedIdsJson = prefs.getString('liked_songs');
+      if (likedIdsJson != null) {
+        final List<dynamic> likedIdsList = json.decode(likedIdsJson);
+        _likedSongIds = likedIdsList.map((id) => id.toString()).toSet();
+        notifyListeners();
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error loading liked songs: $e');
+      }
+    }
+  }
+
+  Future<void> _saveLikedSongs() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final likedIdsList = _likedSongIds.toList();
+      await prefs.setString('liked_songs', json.encode(likedIdsList));
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error saving liked songs: $e');
+      }
+    }
   }
 
   void _initAudioPlayer() {
@@ -167,6 +202,16 @@ class MusicProvider extends ChangeNotifier {
   void clearSearch() {
     _searchQuery = '';
     _filteredSongs = [];
+    notifyListeners();
+  }
+
+  Future<void> toggleLike(Song song) async {
+    if (_likedSongIds.contains(song.id)) {
+      _likedSongIds.remove(song.id);
+    } else {
+      _likedSongIds.add(song.id);
+    }
+    await _saveLikedSongs();
     notifyListeners();
   }
 

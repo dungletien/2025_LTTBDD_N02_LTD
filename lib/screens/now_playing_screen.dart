@@ -88,10 +88,18 @@ class NowPlayingScreen extends StatelessWidget {
                     ],
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.favorite_border),
-                  iconSize: 28,
-                  onPressed: () {},
+                Consumer<MusicProvider>(
+                  builder: (context, musicProvider, _) {
+                    final isLiked = musicProvider.isLiked(currentSong.id);
+                    return IconButton(
+                      icon: Icon(
+                        isLiked ? Icons.favorite : Icons.favorite_border,
+                      ),
+                      iconSize: 28,
+                      color: isLiked ? Colors.red : Theme.of(context).colorScheme.onBackground,
+                      onPressed: () => musicProvider.toggleLike(currentSong),
+                    );
+                  },
                 ),
               ],
             ),
