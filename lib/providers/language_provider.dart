@@ -44,6 +44,9 @@ class LanguageProvider extends ChangeNotifier {
     'cancel': 'Hủy',
     'no_song_playing': 'Không có bài hát đang phát',
     'no_liked_songs': 'Bạn chưa thích bài hát nào',
+    'name': 'Tên',
+    'email': 'Email',
+    'total_songs': 'Tổng bài hát',
   };
 
   static const Map<String, String> _englishTranslations = {
@@ -67,6 +70,9 @@ class LanguageProvider extends ChangeNotifier {
     'cancel': 'Cancel',
     'no_song_playing': 'No song playing',
     'no_liked_songs': 'No liked songs yet',
+    'name': 'Name',
+    'email': 'Email',
+    'total_songs': 'Total Songs',
   };
 }
 

@@ -6,6 +6,7 @@ import 'now_playing_screen.dart';
 import '../providers/theme_provider.dart';
 import '../providers/language_provider.dart' show LanguageProvider, AppLanguage;
 import 'liked_songs_screen.dart';
+import 'profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -504,7 +505,17 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            _drawerItem(context, Icons.person_outline, 'profile', onTap: () {}),
+            _drawerItem(
+              context,
+              Icons.person_outline,
+              'profile',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const ProfileScreen()),
+                );
+              },
+            ),
             _drawerItem(
               context,
               Icons.favorite_border,
